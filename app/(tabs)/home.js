@@ -1,4 +1,7 @@
 import { Stack, Tabs, Link, router } from "expo-router";
+import { useState, useEffect } from "react";
+import * as Location from "expo-location";
+import { useFonts } from "expo-font";
 import {
   FlatList,
   Image,
@@ -8,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import {
   MaterialCommunityIcons,
@@ -29,49 +33,132 @@ import {
 
 import Categories from "../../components/categories";
 import Recommended from "../../components/recommended";
+import Featured from "../../components/featured";
 import Tiles from "../../components/offertiles";
+import SubList from "../../components/sublist";
+import Maps from "../../components/maps";
+import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
+
+import { useSelector, useDispatch } from "react-redux";
+import { increment, decrement } from "../../features/counterSlice";
+
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { FirebaseApp } from "firebase/app";
 
 export default function home() {
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [address, setAddress] = useState("Waiting..");
+
+  let text = "Waiting..";
+
+  const geocodingClient = mbxGeocoding({
+    accessToken:
+      "pk.eyJ1Ijoic29ua2V5IiwiYSI6ImNscnk1eGFiNTE5ZmQybnRlMmZnNG1uamkifQ.6wx_Zelk802bbBam5DdtRw",
+  });
+
+  let latitude, longitude;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          setErrorMsg("Permission to access location was denied");
+          return;
+        }
+
+        let location = await Location.getCurrentPositionAsync({});
+        setLocation(location);
+        const latitude = location.coords.latitude; // Assign latitude here
+        const longitude = location.coords.longitude; // Assign longitude here
+
+        const response = await fetch(``);
+        const data = await response.json();
+        setAddress(data.display_name);
+
+        // Reverse geocode the coordinates to get the address
+        /*geocodingClient
+        .reverseGeocode({
+          query: [longitude, latitude],
+        })
+        .send()
+        .then((response) => {
+          const place_name = response.body.features[0].place_name;
+          setAddress(place_name);
+        });*/
+      } catch (error) {
+        console.error(error);
+      }
+    })();
+  }, []);
+
+  if (errorMsg) {
+    alert(errorMsg);
+  } else if (location) {
+    text = JSON.stringify(location);
+  }
+
+  const count = useSelector((state) => state.counter.value);
+  const dispatch = useDispatch();
+
   return (
-    <View accessibilityRole="scrollbar">
+    <View accessibilityRole="scrollbar" style={{ fontFamily: "" }}>
       <ScrollView
         showsHorizontalScrollIndicator={false}
         showsVrticalScrollIndicator={false}
       >
         <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
-          <Tabs.Screen
-            options={{
-              headerShown: true,
-              tabBarIcon: () => (
-                <AntDesign name="home" size={24} color="black" />
-              ),
-            }}
-          />
           <Stack.Screen
             options={{
               headerShadowVisible: false,
               boxShadow: false,
               headerTitle: "",
               headerLeft: () => (
-                <EvilIcons name="location" size={24} color="black" />
+                <TouchableOpacity
+                  onPress={() => {
+                    Location.getCurrentPositionAsync({});
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      width: 300,
+                    }}
+                  >
+                    <EvilIcons name="location" size={24} color="black" />
+                    <Text
+                      style={{
+                        fontWeight: "500",
+                        fontFamily: "",
+                      }}
+                    >
+                      {address}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               ),
             }}
           />
 
           <View style={styles.search}>
-            <Text> What service are you looking for? </Text>
+            <Text style={{ fontWeight: "400", fontSize: 16, color: "#ccc" }}>
+              {" "}
+              What service are you looking for?{" "}
+            </Text>
             <TouchableOpacity
-              onPress={() => router.push("/searching")}
+              onPress={() => router.push("/search")}
               style={{
-                borderColor: "#ccc",
+                borderColor: "#cccc",
                 borderWidth: 1,
-                borderRadius: 4,
+                borderRadius: 12,
                 backgroundColor: "#fff",
                 padding: 8,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.1,
-                shadowRadius: 4,
+                shadowRadius: 12,
                 flexDirection: "row",
                 alignItems: "center",
               }}
@@ -82,12 +169,35 @@ export default function home() {
           </View>
 
           <View>
-            <TouchableOpacity onPress={() => router.push("/services")}>
-              <Text> Go to</Text>
+            <TouchableOpacity onPress={() => router.navigate("notification")}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginVertical: 10,
+                  padding: 10,
+                  backgroundColor: "#fff",
+                }}
+              >
+                <View style={{ flexDirection: "row" }}>
+                  <MaterialCommunityIcons
+                    name="shield-account"
+                    size={24}
+                    color="black"
+                  />
+                  <Text style={{ marginLeft: 10 }}>
+                    Covid-19 safety measures
+                  </Text>
+                </View>
+                <View>
+                  <Ionicons name="chevron-forward" size={24} color="black" />
+                </View>
+              </View>
             </TouchableOpacity>
           </View>
 
           <Categories />
+          <Maps />
 
           <View
             style={{
@@ -98,7 +208,12 @@ export default function home() {
           >
             <View style={{ paddingLeft: 8 }}>
               <Text
-                style={{ fontWeight: "bold", fontSize: 20, marginBottom: 8 }}
+                style={{
+                  fontWeight: "600",
+                  fontSize: 17,
+                  marginBottom: 8,
+                  fontFamily: "",
+                }}
               >
                 Most booked services
               </Text>
@@ -110,12 +225,30 @@ export default function home() {
             style={{
               backgroundColor: "#fff",
               marginVertical: 5,
+              paddingVertical: 10,
+            }}
+          >
+            <View style={{ paddingLeft: 8 }}>
+              <Text
+                style={{ fontWeight: "600", fontSize: 17, marginBottom: 8 }}
+              >
+                Featured services
+              </Text>
+            </View>
+
+            <Featured />
+          </View>
+
+          <View
+            style={{
+              backgroundColor: "#fff",
+              marginVertical: 5,
               paddingVertical: 28,
             }}
           >
             <View style={{ paddingLeft: 8 }}>
               <Text
-                style={{ fontWeight: "bold", fontSize: 20, marginVertical: 8 }}
+                style={{ fontWeight: "700", fontSize: 17, marginVertical: 8 }}
               >
                 Women's care
               </Text>
@@ -123,36 +256,47 @@ export default function home() {
 
             <Tiles />
           </View>
-
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              flexWrap: "wrap",
-              backgroundColor: "#fff",
-              padding: 10,
-              alignItems: "center",
-              width: "100%",
+          <TouchableOpacity
+            onPress={() => {
+              router.push("ChatScreen");
             }}
           >
-            <View style={{ width: "50%" }}>
-              {/* Adjust styles for text as needed */}
-              <Text
-                style={{ fontWeight: "bold", fontSize: 18, textAlign: "left" }}
-              >
-                Refer us and get free service
-              </Text>
-              <Text style={{ marginVertical: 4 }}>
-                Stand a chance to win a free service when you refer us
-              </Text>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+
+                backgroundColor: "#fff",
+                padding: 10,
+                alignItems: "center",
+                alignContent: "center",
+
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ width: 200 }}>
+                {/* Adjust styles for text as needed */}
+                <Text
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: 18,
+                    textAlign: "left",
+                  }}
+                >
+                  Refer us and get free service
+                </Text>
+                <Text style={{ marginVertical: 4 }}>
+                  Stand a chance to win a free service when you refer us
+                </Text>
+              </View>
+              <View style={{}}>
+                <Image
+                  source={require("../../assets/images/gift.jpg")}
+                  style={{ height: 150, width: 150, borderRadius: 10 }}
+                />
+              </View>
             </View>
-            <View style={{ width: "50%" }}>
-              <Image
-                source={require("../../assets/images/gift.jpg")}
-                style={{ height: 150, width: 150, borderRadius: 10 }}
-              />
-            </View>
-          </View>
+          </TouchableOpacity>
         </SafeAreaView>
       </ScrollView>
     </View>

@@ -30,17 +30,35 @@ import {
   offers,
 } from "../constants/contants";
 
+import { useFonts, Quicksand_400Regular } from "@expo-google-fonts/quicksand";
+import { Raleway_400Regular } from "@expo-google-fonts/raleway";
+
 export default function services({ navigation }) {
+  let [fontsLoaded, fontError] = useFonts({
+    Quicksand_400Regular,
+    Raleway_400Regular,
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
     <>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, fontFamily: "Raleway_400Regular" }}>
         <ScrollView>
           <StatusBar />
-          <Image
-            source={require("../assets/images/cleaning.png")}
-            resizeMode="cover"
-            style={{ height: 300, width: "auto" }}
-          />
+
+          <View style={{ backgroundColor: "#fff" }}>
+            <Image
+              source={require("../assets/images/cleaning.png")}
+              resizeMode="cover"
+              style={{
+                height: 300,
+                width: "auto",
+              }}
+            />
+          </View>
 
           <SafeAreaView
             style={{
@@ -63,15 +81,16 @@ export default function services({ navigation }) {
               <View
                 style={{
                   paddingLeft: 8,
-                  paddingVertical: 8,
+                  paddingVertical: 20,
+                  marginVertical: 8,
                   backgroundColor: "#fff",
                 }}
               >
                 <Text
                   style={{
-                    fontWeight: "bold",
                     fontSize: 18,
                     marginVertical: 8,
+                    fontFamily: "Raleway_400Regular",
                   }}
                 >
                   Bathroom and Toilet cleaning
@@ -90,7 +109,7 @@ export default function services({ navigation }) {
                       <View
                         style={{
                           flexDirection: "row",
-                          marginVertical: 10,
+                          paddingVertical: 8,
                           borderBottomWidth: 1,
                           borderColor: "#ccc",
 
@@ -115,19 +134,7 @@ export default function services({ navigation }) {
                             <Text style={{ fontWeight: "bold", fontSize: 18 }}>
                               {item.name}
                             </Text>
-                            <Text
-                              style={{
-                                paddingVertical: 2,
-                                color: "#36454f",
-                              }}
-                            >
-                              <MaterialIcons
-                                name="star-rate"
-                                size={13}
-                                color="#36454f"
-                              />
-                              {item.rating} ({item.reviews} reviews )
-                            </Text>
+
                             <Text
                               style={{
                                 paddingVertical: 2,
@@ -158,9 +165,12 @@ export default function services({ navigation }) {
                                 {item.description.map((desc, index) => (
                                   <Text
                                     key={index}
-                                    style={{ marginVertical: 5 }}
+                                    style={{
+                                      marginVertical: 4,
+                                      marginLeft: 12,
+                                    }}
                                   >
-                                    &bull; {desc}
+                                    {desc}
                                   </Text>
                                 ))}
                               </View>
@@ -207,5 +217,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  recomendedCard: { marginHorizontal: 10 },
+  recommendedCard: { paddingVertical: 30 },
 });

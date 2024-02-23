@@ -1,13 +1,17 @@
+import React, { useEffect, useState } from "react";
 import {
   Stack,
   Tabs,
   Link,
   router,
+  route,
   useNavigation,
   useRouter,
   useLocalSearchParams,
+  setOptions,
 } from "expo-router";
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   SafeAreaView,
@@ -17,17 +21,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ImageBackground,
 } from "react-native";
-import {
-  MaterialCommunityIcons,
-  Ionicons,
-  EvilIcons,
-  Feather,
-  MaterialIcons,
-  FontAwesome,
-  AntDesign,
-} from "@expo/vector-icons";
+import { SimpleLineIcons } from "@expo/vector-icons";
 
 import {
   categories,
@@ -35,176 +30,125 @@ import {
   trending,
   mostBooked,
   offers,
+  cleaning,
+  services,
+  Plumbing,
 } from "../constants/contants";
+import SubList from "../components/sublist";
+
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 export default function Modal() {
-  const navigation = useNavigation();
-  const item = useLocalSearchParams();
+  const { catname, id } = useLocalSearchParams();
+  const [modalVisible, setModalVisible] = useState(true);
+  const [services, setServices] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  //const serviceArray = services[name] || [];
+  const auth = getAuth();
+  const db = getFirestore();
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      setIsLoading(true);
+      const querySnapshot = await getDocs(
+        collection(db, "categories", id, "service")
+      );
+      const servicesArray = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setServices(servicesArray);
+      setIsLoading(false);
+    };
+    fetchServices();
+  }, []);
 
   const isPresented = router.canGoBack();
-  console.log(item);
   return (
     <>
-      {/* Use `../` as a simple way to navigate to the root. This is not analogous to "goBack". */}
       {!isPresented && <Link href="../">Dismiss</Link>}
+      {/* Native modals have dark backgrounds on iOS, set the status bar to light content. */}
+      <Stack.Screen
+        options={{
+          headerTitle: `${catname}`,
+        }}
+      />
+      {/* Use `../` as a simple way to navigate to the root. This is not analogous to "goBack". */}
       {/* Native modals have dark backgrounds on iOS, set the status bar to light content. */}
       <StatusBar style="light" />
 
-      <ScrollView>
-        <StatusBar />
-        <Image
-          source={require("../assets/images/cleaning.png")}
-          style={{ height: 200 }}
-        />
-
-        <View>
-          <TouchableOpacity
-            onPress={() =>
-              router.push({
-                pathname: `modal`,
-                params: item,
-              })
-            }
-            style={{
-              paddingHorizontal: 8,
-              marginVertical: 5,
-              paddingVertical: 25,
-              backgroundColor: "#fff",
-            }}
-          >
-            <Text style={{ fontWeight: "bold", fontSize: 18 }}>
-              {item.name}
-            </Text>
-            <Text
+      <FlatList
+        data={services}
+        renderItem={({ item: service }) =>
+          isLoading ? (
+            <ActivityIndicator
+              size="small"
               style={{
-                paddingVertical: 2,
-                color: "#36454f",
+                alignContent: "center",
+                justifyContent: "center",
+                alignSelf: "center",
+                marginTop: 20,
               }}
-            >
-              <MaterialIcons name="star-rate" size={13} color="#36454f" />
-              {item.rating} ({item.reviews} reviews )
-            </Text>
-            <Text
-              style={{
-                paddingVertical: 2,
-                color: "#36454f",
-              }}
-            >
-              <MaterialCommunityIcons
-                name="currency-ngn"
-                size={12}
-                color="#36454f"
-              />
-              {item.price} &bull; {item.duration}
-            </Text>
-            <Text style={{ paddingVertical: 2, color: "#36454f" }}>
-              <View
-                style={{
-                  flexDirection: "column",
-                  width: "",
-                  marginHorizontal: 8,
-                  paddingVertical: 5,
+              color="#333333"
+            />
+          ) : service.length < 1 ? (
+            <Text> No service found </Text>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  router.replace({
+                    pathname: `details/[id]`,
+                    params: service,
+                    catname,
+                  });
+                  router.canGoBack(); // Close the modal
+                  setModalVisible(false); // Close the modal
                 }}
               >
-                <Text>Description:</Text>
-                <View style={{}}></View>
-              </View>
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View
-          style={{
-            paddingLeft: 8,
-            paddingVertical: 8,
-            backgroundColor: "#fff",
-          }}
-        >
-          <Text
-            style={{
-              fontWeight: "bold",
-              fontSize: 18,
-              marginVertical: 8,
-            }}
-          >
-            Reviews
-          </Text>
-          <FlatList
-            data={reviews}
-            renderItem={({ item }) => (
-              <>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    marginVertical: 10,
-                    marginHorizontal: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  <View style={{ marginHorizontal: 10, paddingVertical: 10 }}>
-                    <Image
-                      style={{ height: 40, width: 40 }}
-                      source={item.favicon}
+                <View style={styles.container}>
+                  <View style={styles.items}>
+                    <Text style={{ textTransform: "capitalize" }}>
+                      {" "}
+                      {service.name}{" "}
+                    </Text>
+                    <SimpleLineIcons
+                      name="arrow-right"
+                      size={14}
+                      color="black"
                     />
                   </View>
-                  <View style={{ marginHorizontal: 10, paddingVertical: 10 }}>
-                    <Text>{item.name}</Text>
-                    <Text>
-                      <MaterialIcons
-                        name="star-rate"
-                        size={13}
-                        color="#36454f"
-                      />
-                      {item.rating} ({item.reviews} reviews ){" "}
-                    </Text>
-                    <Text>{item.timestamp}</Text>
-                    <Text>{item.description}</Text>
-                  </View>
-                  <View></View>
                 </View>
-              </>
-            )}
-            keyExtractor={(item) => item.id}
-          />
-        </View>
-      </ScrollView>
-      <View
-        style={{
-          flex: 1,
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <TouchableOpacity
-          style={{
-            borderColor: "#ccc",
-            borderRadius: 8,
-            borderWidth: 1,
-            paddingVertical: 9,
-            paddingHorizontal: 10,
-            marginHorizontal: 4,
-          }}
-        >
-          <MaterialIcons name="favorite-outline" size={24} color="red" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{
-            backgroundColor: "#ccc",
-            borderColor: "#ccc",
-            borderRadius: 8,
-            borderWidth: 1,
-            paddingVertical: 12,
-            paddingHorizontal: 10,
-            width: 300,
-          }}
-        >
-          <Text style={{ textAlign: "center", color: "#fff" }}>
-            {" "}
-            Book service{" "}
-          </Text>
-        </TouchableOpacity>
-      </View>
+              </TouchableOpacity>
+            </>
+          )
+        }
+        keyExtractor={(service) => service.id}
+      />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    paddingVertical: 16,
+    paddingHorizontal: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f5f5f5",
+  },
+  items: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+});

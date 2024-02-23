@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -5,115 +6,221 @@ import {
   Pressable,
   TouchableOpacity,
   StyleSheet,
+  StatusBar,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+  signInWithCredential,
+  OAuthProvider,
+  Button,
+  Alert,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
-export default function Home() {
+import { SafeAreaView } from "react-native";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  getReactNativePersistence,
+  GoogleAuthProvider,
+  initializeAuth,
+} from "firebase/auth";
+
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+
+import firebase from "firebase/app";
+const Index = () => {
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.replace("home");
+      }
+    });
+  }, []);
+
+  const handleGoogleLogin = () => {};
+
+  const handleSignup = () => {
+    setLoading(true);
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredentials) => {
+        const user = userCredentials.user;
+        console.log(user.email);
+        setLoading(false); // Add this line
+      })
+      .catch((error) => {
+        Alert.alert(error.message);
+        setLoading(false); // And this line
+      });
+  };
+
+  const handleLogin = () => {
+    setLoading(true);
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredentials) => {
+        const user = userCredentials.user;
+        console.log(user.email);
+        setLoading(false); // Add this line
+      })
+      .catch((error) => {
+        Alert.alert(error.message);
+        setLoading(false); // And this line
+      });
+  };
+
   return (
     <>
-      <View
+      <SafeAreaView>
+        <StatusBar />
+      </SafeAreaView>
+      <KeyboardAvoidingView
+        behavior="padding"
         style={{
-          marginTop: 110,
-          alignItems: "center",
+          flex: 1,
           justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        <Text
-          style={{
-            fontSize: 34,
-          }}
-        >
-          {" "}
-          Oddly
-        </Text>
-      </View>
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <View
-          style={{
-            backgroundColor: "white",
-            borderWidth: 1,
-            borderColor: "#ccc",
-            flexDirection: "row",
-            borderRadius: 4,
-            width: "90%",
-            padding: 14,
-          }}
-        >
-          <Text> +234 </Text>
+        <Text style={{ fontWeight: "600", fontSize: 20 }}> Welcome </Text>
+        <View>
           <TextInput
-            placeholder="Enter phone number"
-            inputMode="tel"
-            keyboardType="phone-pad"
-            returnKeyType="done"
-            maxLength={10}
-            style={{
-              color: "black",
-            }}
+            placeholder="John@wrkly.com"
+            value={email}
+            onChangeText={(text) => setEmail(text)}
+            style={styles.textInput}
           />
-        </View>
 
-        <TouchableOpacity
-          onPress={() => router.push("/home")}
-          style={{
-            flexDirection: "row",
-            marginTop: 20,
-            borderRadius: 4,
-            width: "90%",
-            backgroundColor: "grey",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 12,
-          }}
-        >
-          <Text
-            style={{
-              color: "white",
-            }}
-          >
-            Get verification code
-          </Text>
-        </TouchableOpacity>
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={(text) => setPassword(text)}
+            secureTextEntry
+            style={styles.textInput}
+          />
 
-        <View style={styles.divider}>
-          <Text> Sign in using </Text>
+          <TouchableOpacity onPress={handleLogin} style={styles.button}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={{ fontWeight: "bold", color: "#fff" }}>Login</Text>
+            )}
+          </TouchableOpacity>
+
+          {/*<TouchableOpacity onPress={handleSignup} style={styles.button}>
+                <Text> Register </Text>
+          </TouchableOpacity> */}
+
+          {/* Divider  */}
+
           <View
             style={{
               flexDirection: "row",
-              padding: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              alignContent: "center",
+              marginVertical: 20,
             }}
           >
-            <TouchableOpacity style={styles.signIn}>
+            <View
+              style={{
+                borderBottomWidth: 1,
+                borderBottomColor: "#ccc",
+                width: 150,
+                marginTop: -10,
+              }}
+            >
+              <Text></Text>
+            </View>
+            <View>
+              <View>
+                <Text> or </Text>
+              </View>
+            </View>
+            <View>
+              <View
+                style={{
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#ccc",
+                  width: 150,
+                  marginTop: -10,
+                }}
+              >
+                <Text></Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Google button  */}
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              marginVertical: 20,
+
+              flexDirection: "row",
+            }}
+          >
+            <TouchableOpacity onPress={handleGoogleLogin} style={styles.signIn}>
               <FontAwesome name="google" size={23} color="#de5246" />
-              <Text> Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.signIn}>
-              <FontAwesome name="apple" size={23} color="black" />
-              <Text> Apple</Text>
             </TouchableOpacity>
           </View>
 
-          <Text> New user? Registere Here</Text>
+          <View
+            style={{
+              justifyContent: "center",
+              marginTop: "auto",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#000" }}>Dont have an account?</Text>
+            <Button
+              title="Register here"
+              onPress={() => {
+                router.navigate("registration");
+              }}
+            ></Button>
+
+            <Button
+              title="user "
+              onPress={() => {
+                router.navigate("userRegistration");
+              }}
+            />
+            <Button
+              title="tasker"
+              onPress={() => {
+                router.navigate("taskerRegistration");
+              }}
+            />
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  divider: {
-    fontSize: 30,
-    alignItems: "center",
-    paddingBottom: 10,
-    marginTop: 50,
-    position: "relative",
-  },
-
-  signIn: {
-    paddingHorizontal: 32,
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    width: 300,
     paddingVertical: 12,
-    width: "50%",
-    margin: 2,
-    flexDirection: "row",
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    marginVertical: 10,
+  },
+  signIn: {
+    paddingHorizontal: 5,
+    paddingVertical: 12,
+
     backgroundColor: "#fff",
     borderRadius: 4,
     shadowColor: "#000",
@@ -121,7 +228,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center",
+    justifyContent: "space-evenly",
     textTransform: "capitalize",
+    width: 50,
+  },
+
+  button: {
+    paddingVertical: 14,
+    flexDirection: "row",
+    backgroundColor: "#14213d",
+    borderRadius: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    textTransform: "capitalize",
+    width: 300,
+    marginVertical: 22,
   },
 });
+
+export default Index;

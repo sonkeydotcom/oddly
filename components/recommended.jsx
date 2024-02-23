@@ -1,4 +1,7 @@
-import React from "react";
+import { React, useState } from "react";
+import { router } from "expo-router";
+import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
+import { faNairaSign } from "@fortawesome/free-solid-svg-icons";
 import {
   FlatList,
   ScrollView,
@@ -26,63 +29,68 @@ import {
   AntDesign,
 } from "@expo/vector-icons";
 
+import SubList from "./sublist";
+
 const Recommended = () => {
+  const [showComponent, setShowComponent] = useState(false);
+  const handleButtonPress = () => {
+    // Toggle the state to show/hide the component
+    setShowComponent(!showComponent);
+  };
   return (
     <View style={styles.recommendedCard}>
       <FlatList
         data={trending}
+        showsHorizontalScrollIndicator={false}
+        horizontal
         renderItem={({ item }) => (
-          <View
-            style={{
-              flexDirection: "row",
-              marginVertical: 10,
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 8,
-              padding: 4,
-            }}
-          >
-            <View>
-              <Image source={item.image} style={styles.recommendedImage} />
-            </View>
-            <View style={{ marginHorizontal: 8 }}>
-              <Text style={{ marginVertical: 2, fontWeight: "bold" }}>
-                {" "}
-                {item.name}{" "}
-              </Text>
-
-              <Text style={{ marginVertical: 2 }}>
-                Availability: {item.availability}
-              </Text>
-              <Text> Starting at: {item.price} </Text>
-            </View>
+          <TouchableOpacity onPress={() => router.navigate("/aggregatorList")}>
             <View
               style={{
-                justifyContent: "center",
-                alignItems: "center",
-                width: 115,
+                flexDirection: "row",
+                marginVertical: 5,
+                marginHorizontal: 4,
+
+                borderRadius: 12,
+                padding: 4,
+                backgroundColor: "#fff",
+
+                shadowColor: "grey",
+                shadowOffset: { width: 4, height: 5 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 5, // for Android elevation
               }}
             >
-              <Text numberOfLines={2} ellipsizeMode="tail">
-                <MaterialIcons name="star-rate" size={12} color="black" />
-                {item.rating} / 10 (100 reviews)
-              </Text>
+              <View>
+                <Image source={item.image} style={styles.recommendedImage} />
+              </View>
+              <View style={{ marginHorizontal: 8 }}>
+                <Text
+                  style={{
+                    marginVertical: 2,
+                    fontWeight: "bold",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {item.name}
+                </Text>
+
+                <Text numberOfLines={2} ellipsizeMode="tail">
+                  <MaterialIcons name="star-rate" size={12} color="black" />
+                  {item.rating} (100k)
+                </Text>
+
+                <Text>
+                  <FontAwesomeIcon icon={faNairaSign} size={12} color="black" />
+                  {item.price}
+                </Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         keyExtractor={(item) => item.id}
       />
-      <View style={{ justifyContent: "center", alignItems: "center" }}>
-        <TouchableOpacity
-          style={{
-            backgroundColor: "#ccc",
-            paddingHorizontal: 16,
-            borderRadius: 4,
-          }}
-        >
-          <Feather name="more-horizontal" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -94,7 +102,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  recommendedCard: { marginHorizontal: 10 },
+  recommendedCard: { marginHorizontal: 1 },
 });
 
 export default Recommended;
